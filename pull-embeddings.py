@@ -3,12 +3,14 @@
 import pandas as pd
 import openai
 import os
+import sys
 
 
 openai.api_key = os.getenv('OPENAI_API_KEY')
 embeddings = {}
 embeddings_filename = '.embeddings.feather'
 words_filename = '/usr/share/dict/words'
+win_words_filename = 'words.txt'
 skip_save_counter = 0
 registered = set()
 
@@ -47,7 +49,7 @@ def chunks(l, chunk_len):
 
 def update_embeddings(fname=None, chunk_len=2000):
     if fname is None:
-        fname = words_filename
+        fname = win_words_filename if 'win' in sys.platform.lower() else words_filename
     for words in chunks(filter_words(open(fname)), chunk_len):
         words = [w for w in words]
         update_embeddings_from_words(words)
