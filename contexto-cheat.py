@@ -26,27 +26,27 @@ while True:
 
     print('Processing...\n')
 
-    # A dict of word:sortings which will contain every word in the word list and list of cosine similarities to the guesses.
+    # A dict of word:sortings which will contain every word in the word list and list of cosine similarties to the guesses.
     # For example: { 'horse': [0.2, 0.7, 0.1] }
-    similarities = defaultdict(list)
-    guess_score = list(zip(guesses[::2], guesses[1::2]))
-    desired_score = []
-    for guess,score in guess_score:
+    diffs = defaultdict(list)
+    guess_rank = list(zip(guesses[::2], guesses[1::2]))
+    desired_rank = []
+    for guess,rank in guess_rank:
         guess_embedding = embeddings.get(guess)
         if guess_embedding is None:
             print(f'skipping {guess}')
             continue
-        desired_score.append(int(score))
+        desired_rank.append(int(rank))
         for word,embedding in zip(df.word, df.embedding):
             if word == guess:
                 continue
-            sim = cosine_similarity(embedding, guess_embedding)
-            similarities[word].append(sim)
+            diff = 1 - cosine_similarity(embedding, guess_embedding)
+            diffs[word].append(diff)
 
-    desired_score = np.array([s/100_000 for s in desired_score])
-    weight = np.array([1/(i+1) for i in range(len(desired_score))])
-    similarities = {k:np.array(v) for k,v in similarities.items() if len(v) == len(desired_score)}
+    desired_rank = np.array([(r/100_000)**(1/2) for r in desired_rank])
+    weight = np.array([1/(i+5) for i in range(len(desired_rank))])
+    diffs = {k:np.array(v) for k,v in diffs.items() if len(v) == len(desired_rank)}
     dot2 = lambda x: np.dot(x,x)
-    similarities = sorted(similarities.items(), key=lambda kv:-dot2(((desired_score-kv[1])*weight)))
-    for word,sim in similarities[:20]:
+    diffs = sorted(diffs.items(), key=lambda kv:dot2((desired_rank-kv[1])*weight))
+    for word,diff in diffs[:20]:
         print(word)
